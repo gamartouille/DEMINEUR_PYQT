@@ -15,30 +15,51 @@ FORM_CLASS, _ = uic.loadUiType(
 
 class BoutonCase(QPushButton):
 
+    signal_fin = pyqtSignal()
+    signal_actualiser = pyqtSignal()
+
     def __init__(self, case, grille, parent=None):
         super().__init__(parent)
         self.case = case
         self.grille = grille
         self.setFixedSize(30,30)
-        if self.case.etat != 0 : 
-            self.setText(str(case.valeur))
+        self.fixer_valeur_case()
+
+
+    def fixer_valeur_case(self):
+        if self.case.etat == 2:
+            self.setText(str(self.case.valeur))
+            self.setIcon(QIcon())
+        else:
+            self.setText(" ")
+            if self.case.etat == 1:
+                self.setIcon(QIcon('/home/formation/Bureau/DEMINEUR_PYQT/flag.png'))
+            else:
+                self.setIcon(QIcon())
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.LeftButton:
             self.clic_gauche()
+            self.fixer_valeur_case()
         elif event.button() == Qt.RightButton:
             self.clic_droit()
+            self.fixer_valeur_case()
             return
         super().mousePressEvent(event)
 
     def clic_gauche(self):
         self.case.reveler()
+        self.signal_actualiser.emit()
         self.setText(str(self.case.valeur))
         self.setIcon(QIcon())
+        if self.grille.condition_fin():
+            print(self.grille.condition_fin())
+            self.signal_fin.emit()
 
     def clic_droit(self):
         self.case.semi_reveler()
-        self.setIcon(QIcon('/home/garance/Documents/PERSO/DEMINEUR/flag.png'))
+        if self.grille.condition_fin():
+            self.signal_fin.emit()
 
 class InterfaceDialog(QtWidgets.QMainWindow):
     def __init__(self, grille):
@@ -51,6 +72,7 @@ class InterfaceDialog(QtWidgets.QMainWindow):
         # #widgets-and-dialogs-with-auto-connect
         self.grille = grille
         self.setWindowTitle("Démineur")
+        self.boutons = []
 
         widget_central = QtWidgets.QWidget()
         layout = QtWidgets.QGridLayout(widget_central)
@@ -58,20 +80,34 @@ class InterfaceDialog(QtWidgets.QMainWindow):
         for i in range(grille.nbr_lignes):
             for j in range(grille.nbr_colonnes):
                 case = grille.element(i,j)
-                bouton_case = BoutonCase(case, grille)
-                layout.addWidget(bouton_case, i,j)
+                self.bouton_case = BoutonCase(case, grille)
+                self.boutons.append(self.bouton_case)
+                layout.addWidget(self.bouton_case, i,j)
+                self.bouton_case.signal_fin.connect(self.interface_fin_jeu)
+                self.bouton_case.signal_actualiser.connect(self.actualiser_boutons)
 
         self.setCentralWidget(widget_central)
+
+    def interface_fin_jeu(self):
+        for i in range(self.grille.nbr_lignes):
+            for j in range(self.grille.nbr_colonnes):
+                case = grille.element(i,j)
+                if case.bombe :
+                    self.bouton_case.setIcon(QIcon("/home/formation/Bureau/DEMINEUR_PYQT/bombe.jpeg"))
+                
+    def actualiser_boutons(self):
+        for bouton in self.boutons:
+            bouton.fixer_valeur_case()
 
     def keyPressEvent(self, event) :
         if event.key() == QtCore.Qt.Key.Key_Escape :
             print('Coucou, échap a été pressée')
             self.close()
 
-
 if __name__=='__main__':
     app = QApplication(sys.argv)
-    grille = Grille.Grille(20,18)
+    grille = Grille.Grille(8,8)
+    print(grille)
     fenetre = InterfaceDialog(grille)
     fenetre.show()
     sys.exit(app.exec())
