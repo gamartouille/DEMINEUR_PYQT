@@ -25,6 +25,8 @@ class BoutonCase(QPushButton):
         self.setFixedSize(30,30)
         self.fixer_valeur_case()
 
+    def nouvel_icone(self, icone):
+        self.setIcon(icone)
 
     def fixer_valeur_case(self):
         if self.case.etat == 2:
@@ -89,11 +91,14 @@ class InterfaceDialog(QtWidgets.QMainWindow):
         self.setCentralWidget(widget_central)
 
     def interface_fin_jeu(self):
-        for i in range(self.grille.nbr_lignes):
-            for j in range(self.grille.nbr_colonnes):
-                case = grille.element(i,j)
-                if case.bombe :
-                    self.bouton_case.setIcon(QIcon("/home/formation/Bureau/DEMINEUR_PYQT/bombe.jpeg"))
+        icone_bombe = QIcon(os.path.join(os.path.dirname(__file__), "bombe.jpeg"))
+        for bouton in self.boutons:
+            if bouton.case.bombe:
+                bouton.nouvel_icone(icone_bombe)
+
+        sortir_jeu = QMessageBox.question(self, "Fin du jeu", "Voulez-vous quitter ?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No,)
+        if sortir_jeu == QMessageBox.Yes :
+            self.close()
                 
     def actualiser_boutons(self):
         for bouton in self.boutons:
